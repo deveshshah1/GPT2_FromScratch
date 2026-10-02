@@ -1,0 +1,1 @@
+Here we reimplement several of the nano gpt implementations from Karpathy's lecture series on youtube as a learning opportunity.
