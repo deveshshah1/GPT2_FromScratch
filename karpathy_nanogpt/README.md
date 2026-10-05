@@ -15,7 +15,8 @@ Builds a decoder-only Transformer one piece at a time, starting from a bigram mo
 
 - [`download_data.ipynb`](tutorial1/download_data.ipynb): step-by-step notebook. It downloads the Tiny Shakespeare dataset, builds a character-level tokenizer, trains a baseline bigram model, and works up to self-attention through the "mathematical trick" (averaging over past tokens with loops, then matrix multiplication, then softmax, then a single attention head).
 - [`train.py`](tutorial1/train.py): the finished training script.
-- `input.txt`: the Tiny Shakespeare dataset (~1.1M characters).
+
+Both tutorials read the Tiny Shakespeare dataset (~1.1M characters) from the shared [`dataset/input.txt`](../dataset/input.txt) at the repo root.
 
 ### Model
 
@@ -49,7 +50,6 @@ Reproduces the 124M-parameter GPT-2 model. The architecture matches OpenAI's GPT
 
 - [`train_gpt2.py`](tutorial2/train_gpt2.py): model definition and training script.
 - [`playground.ipynb`](tutorial2/playground.ipynb): scratch notebook for tokenizing with `tiktoken` and building `(x, y)` batches.
-- `input.txt`: Tiny Shakespeare, used in the notebook.
 
 ### Model
 
