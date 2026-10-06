@@ -19,7 +19,7 @@ with open(CONFIG_PATH, "r") as file:
     config_training = {k: v["value"] for k, v in config_training.items()}
 
 
-def train(use_wandb=True, resume_id=None, ckpt_path=None):
+def train(use_wandb=True, resume=False, resume_id=None):
     pl.seed_everything(config_training["experiment_details"]["seed"])
     torch.set_float32_matmul_precision("high")  # TF32 matmuls on Ampere+ GPUs
 
@@ -31,6 +31,9 @@ def train(use_wandb=True, resume_id=None, ckpt_path=None):
     print(f"Model directory: {model_dir}")
     model_dir = os.path.join(model_dir, "checkpoints")
     os.makedirs(model_dir, exist_ok=True)
+
+    # Resuming from last ckpt
+    ckpt_path = os.path.join(model_dir, "last.ckpt") if resume else None
 
     callbacks = []
     if use_wandb:
@@ -127,26 +130,15 @@ def define_all_callbacks(model_dir, model_name):
 
     checkpoint_callback_2 = ModelCheckpoint(
         dirpath=model_dir,
-        filename=f"{model_name}_latest",
         every_n_train_steps=200,
-        verbose=True,
-    )
-
-    checkpoint_callback_3 = ModelCheckpoint(
-        dirpath=model_dir,
-        filename=f"{model_name}_best_train_loss",
-        monitor="train/loss_epoch",
-        mode="min",
-        save_top_k=1,
-        save_last=False,
-        save_on_train_epoch_end=True,  # train/loss_epoch only exists once an epoch ends
+        save_top_k=0,
+        save_last=True,
         verbose=True,
     )
 
     callbacks = [
         checkpoint_callback_1,
         checkpoint_callback_2,
-        checkpoint_callback_3,
     ]
 
     return callbacks
@@ -157,15 +149,17 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--resume_id", default=None, help="wandb run id to resume logging into"
+        "--resume",
+        action="store_true",
+        help="resume training from last.ckpt in this experiment's checkpoint dir",
     )
     parser.add_argument(
-        "--ckpt_path", default=None, help="checkpoint path to resume training from"
+        "--resume_id", default=None, help="wandb run id to resume logging into"
     )
     args = parser.parse_args()
 
     train(
         use_wandb=config_training["experiment_details"]["use_wandb"],
+        resume=args.resume,
         resume_id=args.resume_id,
-        ckpt_path=args.ckpt_path,
     )
