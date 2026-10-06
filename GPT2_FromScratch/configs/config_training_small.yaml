@@ -3,13 +3,13 @@ dataset_configs:
   value:
     dataset_path: "./dataset/finewebedu" # LOCAL
     # dataset_path: "/content/finewebedu" # GOOGLE COLAB
-    micro_batch_size: 64 # B: sequences per forward pass
+    micro_batch_size: 32 # B: sequences per forward pass
     sequence_length: 256 # T: tokens per sequence, must equal block_size
 
 training_hyperparameters:
   desc: Training Hyperparameters
   value:
-    total_batch_size: 262144 # 2**18 tokens = B * T * 16 grad accum steps
+    total_batch_size: 262144 # 2**18 tokens = B * T * 32 grad accum steps
     max_steps: 7629 # 1 epoch of 20 shards: 2B tokens / 262144 tokens per step
     warmup_steps: 300
     max_lr: 0.001
@@ -20,7 +20,7 @@ training_hyperparameters:
     precision: "16-mixed"
     compile: True
     eval_interval: 100 # optimizer steps (~26M tokens)
-    val_loss_steps: 20 # micro batches (~330K tokens)
+    val_loss_steps: 20 # micro batches (~164K tokens)
 
 model_architecture_hyperparameters:
   desc: Model Architecture Hyperparameters (~30M params, tutorial 1 dimensions)
