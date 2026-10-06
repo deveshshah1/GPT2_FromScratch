@@ -27,9 +27,9 @@ model_architecture_hyperparameters:
   value:
     block_size: 1024 # max sequence length
     vocab_size: 50304
-    n_layer: 12
-    n_head: 12
-    n_embd: 768
+    num_layers: 12
+    num_heads: 12
+    embed_dim: 768
 
 experiment_details:
   desc: Experiment Details

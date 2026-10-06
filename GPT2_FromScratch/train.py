@@ -132,9 +132,20 @@ def define_all_callbacks(model_dir, model_name):
         verbose=True,
     )
 
+    checkpoint_callback_3 = ModelCheckpoint(
+        dirpath=model_dir,
+        filename=f"{model_name}_best_train_loss",
+        monitor="train/loss_epoch",
+        mode="min",
+        save_top_k=1,
+        save_last=False,
+        verbose=True,
+    )
+
     callbacks = [
         checkpoint_callback_1,
         checkpoint_callback_2,
+        checkpoint_callback_3,
     ]
 
     return callbacks

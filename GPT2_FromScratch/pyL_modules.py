@@ -55,30 +55,32 @@ class PyLModel(pl.LightningModule):
             "block_size"
         ]
         self.hparams_training = config_training["training_hyperparameters"]
-        self.max_length = config_training["dataset_configs"]["sequence_length"]
+        self.max_length = 32
         self.tokenizer = TextDataset.get_tokenizer()
 
         self._t_last_step = None
+        self._loss_accum = 0.0
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        _, loss = self.model(x, y)
-        self.log(
-            "train/loss",
-            loss,
-            on_step=True,
-            on_epoch=True,
-            prog_bar=True,
-            batch_size=x.size(0),
-        )
+        y_hat = self.model(x)
+        loss = F.cross_entropy(y_hat.view(-1, y_hat.size(-1)), y.view(-1))
+        # Mean loss over the micro batches of this optimizer step, logged in on_before_optimizer_step
+        self._loss_accum += loss.detach() / self.trainer.accumulate_grad_batches
         return loss
 
     def on_before_optimizer_step(self, optimizer):
+        # Loss averaged over all micro batches and devices of this optimizer step
+        self.log("train/loss", self._loss_accum, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
+        self._loss_accum = 0.0
+
         # Gradients here are fully accumulated but not yet clipped
         norms = grad_norm(self.model, norm_type=2)
         self.log("train/grad_norm", norms["grad_2.0_norm_total"], on_step=True)
 
         # Throughput: time between consecutive optimizer steps
+        if self.device.type == "cuda":
+            torch.cuda.synchronize()
         t_now = time.time()
         if self._t_last_step is not None:
             dt = t_now - self._t_last_step
@@ -94,7 +96,8 @@ class PyLModel(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        _, loss = self.model(x, y)
+        y_hat = self.model(x)
+        loss = F.cross_entropy(y_hat.view(-1, y_hat.size(-1)), y.view(-1))
         self.log(
             "val/loss",
             loss,
@@ -129,7 +132,7 @@ class PyLModel(pl.LightningModule):
     @torch.no_grad()
     def generate_samples(self):
         tokens = torch.tensor(self.tokenizer.encode("Hello, I'm a language model,"), dtype=torch.long)
-        xgen = tokens.unsqueeze(0).repeat(3)
+        xgen = tokens.unsqueeze(0).repeat(3, 1)
         xgen = xgen.to(self.device)
         sample_rng = torch.Generator(device=self.device)
         sample_rng.manual_seed(42 + self.global_rank)
@@ -137,7 +140,7 @@ class PyLModel(pl.LightningModule):
         self.model.eval()
         while xgen.size(1) < self.max_length:
             # crop to the last block_size tokens
-            logits, _ = self.model(xgen[:, -self.block_size :])  # (B, T, vocab_size)
+            logits = self.model(xgen[:, -self.block_size :])  # (B, T, vocab_size)
             # take the logits at the last position
             logits = logits[:, -1, :]  # (B, vocab_size)
             probs = F.softmax(logits, dim=-1)
