@@ -3,24 +3,24 @@ dataset_configs:
   value:
     dataset_path: "./dataset/finewebedu" # LOCAL
     # dataset_path: "/content/finewebedu" # GOOGLE COLAB
-    micro_batch_size: 32 # B: sequences per forward pass
+    micro_batch_size: 64 # B: sequences per forward pass
     sequence_length: 256 # T: tokens per sequence, must equal block_size
 
 training_hyperparameters:
   desc: Training Hyperparameters
   value:
-    total_batch_size: 8192 # = B * T, so no gradient accumulation
-    max_steps: 1000 # ~27 epochs at 37 steps/epoch
-    warmup_steps: 50
+    total_batch_size: 262144 # 2**18 tokens = B * T * 16 grad accum steps
+    max_steps: 7629 # 1 epoch of 20 shards: 2B tokens / 262144 tokens per step
+    warmup_steps: 300
     max_lr: 0.001
     min_lr: 0.0001
     weight_decay: 0.1
-    adam_betas: [0.9, 0.99]
+    adam_betas: [0.9, 0.95]
     adam_eps: 0.00000001
     precision: "16-mixed"
     compile: True
-    eval_interval: 50
-    val_loss_steps: 5
+    eval_interval: 100 # optimizer steps (~26M tokens)
+    val_loss_steps: 20 # micro batches (~330K tokens)
 
 model_architecture_hyperparameters:
   desc: Model Architecture Hyperparameters (~30M params, tutorial 1 dimensions)
@@ -34,8 +34,9 @@ model_architecture_hyperparameters:
 experiment_details:
   desc: Experiment Details
   value:
-    model_dir: "./trained_models/"
-    experiment_name: "gpt2_small_shakespeare"
+    model_dir: "./trained_models/" # LOCAL
+    # model_dir: "/content/drive/MyDrive/Programming/trained_models/" # GOOGLE COLAB (persists across sessions)
+    experiment_name: "gpt2_small_finewebedu_2B"
     use_wandb: True
     seed: 1337
 

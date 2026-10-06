@@ -10,6 +10,7 @@ from lightning.pytorch.utilities import grad_norm
 from model import GPT2
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
+from utils.utils import ResumableRandomSampler
 
 # Global config
 with open(CONFIG_PATH, "r") as file:
@@ -26,11 +27,11 @@ class PyLDataModule(pl.LightningDataModule):
         self.train_set = ShardDataset(split="train", **self.dataset_configs)
         self.val_set = ShardDataset(split="val", **self.dataset_configs)
 
-    def _dataloader(self, dataset, shuffle, drop_last):
+    def _dataloader(self, dataset, drop_last, sampler=None):
         return DataLoader(
             dataset,
             batch_size=self.dataset_configs["micro_batch_size"],
-            shuffle=shuffle,
+            sampler=sampler,
             drop_last=drop_last,
             pin_memory=torch.cuda.is_available(),
             num_workers=4,
@@ -38,10 +39,13 @@ class PyLDataModule(pl.LightningDataModule):
         )
 
     def train_dataloader(self):
-        return self._dataloader(self.train_set, shuffle=True, drop_last=True)
+        B = self.dataset_configs["micro_batch_size"]
+        start = self.trainer.global_step * self.trainer.accumulate_grad_batches * B * self.trainer.world_size
+        sampler = ResumableRandomSampler(len(self.train_set), config_training["experiment_details"]["seed"], start)
+        return self._dataloader(self.train_set, sampler=sampler, drop_last=True)
 
     def val_dataloader(self):
-        return self._dataloader(self.val_set, shuffle=False, drop_last=False)
+        return self._dataloader(self.val_set, drop_last=False)
 
 
 class PyLModel(pl.LightningModule):
