@@ -128,7 +128,7 @@ def define_all_callbacks(model_dir, model_name):
     checkpoint_callback_2 = ModelCheckpoint(
         dirpath=model_dir,
         filename=f"{model_name}_latest",
-        every_n_train_steps=1000,
+        every_n_train_steps=200,
         verbose=True,
     )
 
@@ -139,6 +139,7 @@ def define_all_callbacks(model_dir, model_name):
         mode="min",
         save_top_k=1,
         save_last=False,
+        save_on_train_epoch_end=True,  # train/loss_epoch only exists once an epoch ends
         verbose=True,
     )
 

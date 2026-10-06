@@ -5,7 +5,7 @@ import torch
 import yaml
 
 CONFIG_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "configs", "config_training.yaml"
+    os.path.dirname(os.path.abspath(__file__)), "configs", "config_training_small.yaml"
 )
 
 with open(CONFIG_PATH, "r") as f:

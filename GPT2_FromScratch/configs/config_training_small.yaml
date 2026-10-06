@@ -1,0 +1,48 @@
+dataset_configs:
+  desc: Text Dataset Configurations (Tiny Shakespeare, GPT-2 tokenizer)
+  value:
+    dataset_path: "./dataset/input.txt" # LOCAL
+    # dataset_path: "/content/drive/MyDrive/Programming/dataset/input.txt" # GOOGLE COLAB
+    train_split: 0.9
+    micro_batch_size: 32 # B: sequences per forward pass
+    sequence_length: 256 # T: tokens per sequence, must equal block_size
+
+training_hyperparameters:
+  desc: Training Hyperparameters
+  value:
+    total_batch_size: 8192 # = B * T, so no gradient accumulation
+    max_steps: 1000 # ~27 epochs at 37 steps/epoch
+    warmup_steps: 50
+    max_lr: 0.001
+    min_lr: 0.0001
+    weight_decay: 0.1
+    adam_betas: [0.9, 0.99]
+    adam_eps: 0.00000001
+    precision: "bf16-mixed"
+    eval_interval: 50
+    val_loss_steps: 5
+
+model_architecture_hyperparameters:
+  desc: Model Architecture Hyperparameters (~30M params, tutorial 1 dimensions)
+  value:
+    block_size: 256 # max sequence length
+    vocab_size: 50304
+    num_layers: 6
+    num_heads: 6
+    embed_dim: 384
+
+experiment_details:
+  desc: Experiment Details
+  value:
+    model_dir: "./trained_models/"
+    experiment_name: "gpt2_small_shakespeare"
+    use_wandb: True
+    seed: 1337
+
+wandb_config:
+  desc: Weights and Biases Configuration
+  value:
+    project: "GPT2_FromScratch"
+    entity: "deveshshah"
+    mode: "online"
+    config: {}

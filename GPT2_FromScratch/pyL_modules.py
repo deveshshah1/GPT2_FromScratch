@@ -131,7 +131,7 @@ class PyLModel(pl.LightningModule):
 
     @torch.no_grad()
     def generate_samples(self):
-        tokens = torch.tensor(self.tokenizer.encode("Hello, I'm a language model,"), dtype=torch.long)
+        tokens = torch.tensor(self.tokenizer.encode("ROMEO:"), dtype=torch.long)
         xgen = tokens.unsqueeze(0).repeat(3, 1)
         xgen = xgen.to(self.device)
         sample_rng = torch.Generator(device=self.device)
