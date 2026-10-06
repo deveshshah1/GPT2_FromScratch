@@ -8,7 +8,7 @@ Source: https://huggingface.co/datasets/kjj0/finewebedu10B-gpt2 (used by llm.c /
 Shard format: 256 int32 header (magic 20240520, version 1, num_tokens, ...), then num_tokens uint16 tokens.
 
 Usage:
-    python prepare_data.py                      # 10 train shards = 1B tokens, plus the val shard
+    python prepare_data.py                      # 20 train shards = 2B tokens, plus the val shard
     python prepare_data.py --num_train_shards 2 # 200M tokens
     python prepare_data.py --out_dir /content/finewebedu  # e.g. fast local disk on Colab
 """
@@ -54,7 +54,7 @@ def download_shard(fname, out_dir):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--num_train_shards", type=int, default=10, help="100M tokens per shard (max 99)")
+    parser.add_argument("--num_train_shards", type=int, default=20, help="100M tokens per shard (max 99)")
     parser.add_argument(
         "--out_dir",
         default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "finewebedu"),
