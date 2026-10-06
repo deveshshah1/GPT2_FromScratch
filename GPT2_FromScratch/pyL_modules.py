@@ -51,6 +51,9 @@ class PyLModel(pl.LightningModule):
         self.wandb_logger = wandb_logger
 
         self.model = GPT2(**config_training["model_architecture_hyperparameters"])
+        if config_training["training_hyperparameters"]["compile"] and torch.cuda.is_available():
+            self.model.compile()
+        
         self.block_size = config_training["model_architecture_hyperparameters"][
             "block_size"
         ]
@@ -140,7 +143,8 @@ class PyLModel(pl.LightningModule):
         self.model.eval()
         while xgen.size(1) < self.max_length:
             # crop to the last block_size tokens
-            logits = self.model(xgen[:, -self.block_size :])  # (B, T, vocab_size)
+            # call forward directly to skip the compiled path, which would recompile for every new length
+            logits = self.model.forward(xgen[:, -self.block_size :])  # (B, T, vocab_size)
             # take the logits at the last position
             logits = logits[:, -1, :]  # (B, vocab_size)
             probs = F.softmax(logits, dim=-1)
