@@ -4,3 +4,6 @@ sandbox/
 # Byte-compiled / optimized files
 __pycache__/
 *.py[cod]
+
+# Downloaded FineWeb-Edu token shards (~2.2GB)
+dataset/finewebedu/
