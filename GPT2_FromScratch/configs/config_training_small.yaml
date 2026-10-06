@@ -1,8 +1,8 @@
 dataset_configs:
   desc: Dataset Configurations (FineWeb-Edu pre-tokenized GPT-2 shards, see dataset/prepare_data.py)
   value:
-    dataset_path: "./dataset/finewebedu" # LOCAL
-    # dataset_path: "/content/finewebedu" # GOOGLE COLAB
+    # dataset_path: "./dataset/finewebedu" # LOCAL
+    dataset_path: "/content/finewebedu" # GOOGLE COLAB
     micro_batch_size: 32 # B: sequences per forward pass
     sequence_length: 256 # T: tokens per sequence, must equal block_size
 
@@ -34,8 +34,8 @@ model_architecture_hyperparameters:
 experiment_details:
   desc: Experiment Details
   value:
-    model_dir: "./trained_models/" # LOCAL
-    # model_dir: "/content/drive/MyDrive/Programming/trained_models/" # GOOGLE COLAB (persists across sessions)
+    # model_dir: "./trained_models/" # LOCAL
+    model_dir: "/content/trained_models/" # GOOGLE COLAB
     experiment_name: "gpt2_small_finewebedu_2B"
     use_wandb: True
     seed: 1337
