@@ -13,6 +13,7 @@ torchvision==0.21.0
 torchaudio==2.6.0
 lightning==2.5.1
 torchmetrics==1.7.2
+setuptools==80.10.2 # needed by triton (torch.compile); uv venvs do not include it
 
 # Data
 numpy==1.24.3

@@ -44,6 +44,6 @@ wandb_config:
   desc: Weights and Biases Configuration
   value:
     project: "GPT2_FromScratch"
-    entity: "deveshshah"
+    entity: "deveshshah-university-of-michigan"
     mode: "online"
     config: {}

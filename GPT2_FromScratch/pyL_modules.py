@@ -186,9 +186,9 @@ class PyLModel(pl.LightningModule):
             {"params": decay_params, "weight_decay": self.hparams_training["weight_decay"]},
             {"params": nodecay_params, "weight_decay": 0.0},
         ]
-        # Use the fused AdamW kernel when available on CUDA
         fused_available = "fused" in inspect.signature(torch.optim.AdamW).parameters
-        use_fused = fused_available and self.device.type == "cuda"
+        is_fp16 = self.hparams_training["precision"] in ("16-mixed", "16")
+        use_fused = fused_available and self.device.type == "cuda" and not is_fp16
 
         if self.trainer.is_global_zero:
             print(
