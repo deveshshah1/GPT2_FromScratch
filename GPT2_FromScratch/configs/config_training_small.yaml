@@ -18,7 +18,7 @@ training_hyperparameters:
     weight_decay: 0.1
     adam_betas: [0.9, 0.99]
     adam_eps: 0.00000001
-    precision: "bf16-mixed"
+    precision: "16-mixed"
     compile: True
     eval_interval: 50
     val_loss_steps: 5
