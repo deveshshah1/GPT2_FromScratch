@@ -1,9 +1,8 @@
 dataset_configs:
-  desc: Text Dataset Configurations (Tiny Shakespeare, GPT-2 tokenizer)
+  desc: Dataset Configurations (FineWeb-Edu pre-tokenized GPT-2 shards, see dataset/prepare_data.py)
   value:
-    dataset_path: "./dataset/input.txt" # LOCAL
-    # dataset_path: "/content/drive/MyDrive/Programming/dataset/input.txt" # GOOGLE COLAB
-    train_split: 0.9
+    dataset_path: "./dataset/finewebedu" # LOCAL
+    # dataset_path: "/content/finewebedu" # GOOGLE COLAB
     micro_batch_size: 32 # B: sequences per forward pass
     sequence_length: 256 # T: tokens per sequence, must equal block_size
 

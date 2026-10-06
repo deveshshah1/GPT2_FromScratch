@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 import tiktoken
 import torch
 import yaml
@@ -12,40 +13,47 @@ with open(CONFIG_PATH, "r") as f:
     config_training = yaml.safe_load(f)
     config_training = {k: v["value"] for k, v in config_training.items()}
 
+HEADER_BYTES = 256 * 4  # 256 int32 header at the start of every shard
 
-class TextDataset(torch.utils.data.Dataset):
+
+class ShardDataset(torch.utils.data.Dataset):
     """
-    Next-token prediction dataset over a single text file, tokenized with the
-    GPT-2 BPE tokenizer. The token stream is split into train/val by position,
-    then cut into non-overlapping sequences of length sequence_length. Each item
-    is (x, y) where y is x shifted one token to the right.
+    Next-token prediction dataset over pre-tokenized GPT-2 shards (see dataset/prepare_data.py).
+    Each shard is memory-mapped and cut into non-overlapping sequences of length
+    sequence_length. Each item is (x, y) where y is x shifted one token to the right.
     """
 
     def __init__(
         self,
-        dataset_path: str = "./dataset/input.txt",
+        dataset_path: str = "./dataset/finewebedu",
         split: str = "train",
         sequence_length: int = 1024,
-        train_split: float = 0.9,
         **kwargs,
     ):
         super().__init__()
         assert split in {"train", "val"}, f"unknown split: {split}"
-        self.split = split
         self.sequence_length = sequence_length
 
-        with open(dataset_path, "r", encoding="utf-8") as f:
-            text = f.read()
-        self.enc = self.get_tokenizer()
-        tokens = torch.tensor(self.enc.encode(text), dtype=torch.long)
+        shard_paths = sorted(
+            os.path.join(dataset_path, f) for f in os.listdir(dataset_path) if f"_{split}_" in f
+        )
+        assert len(shard_paths) > 0, f"no {split} shards found in {dataset_path}"
+        self.shard_paths = shard_paths
+        # Memmaps are opened lazily in each DataLoader worker (pickling an open memmap copies its data)
+        self.shards = [None] * len(shard_paths)
 
-        n = int(train_split * len(tokens))
-        self.tokens = tokens[:n] if split == "train" else tokens[n:]
-
+        # All shards hold the same number of tokens (uint16 = 2 bytes each)
+        tokens_per_shard = (os.path.getsize(shard_paths[0]) - HEADER_BYTES) // 2
+        assert all(os.path.getsize(p) == os.path.getsize(shard_paths[0]) for p in shard_paths), "shards must be equal size"
         # -1 so the final target token of the last sequence is in range
-        self.num_sequences = (len(self.tokens) - 1) // sequence_length
+        self.seqs_per_shard = (tokens_per_shard - 1) // sequence_length
+        self.num_sequences = self.seqs_per_shard * len(shard_paths)
 
-        print(f"{split} split: {len(self.tokens):,} tokens -> {self.num_sequences:,} sequences of {sequence_length}")
+        num_tokens = tokens_per_shard * len(shard_paths)
+        print(
+            f"{split} split: {len(shard_paths)} shards, {num_tokens:,} tokens -> "
+            f"{self.num_sequences:,} sequences of {sequence_length}"
+        )
 
     @staticmethod
     def get_tokenizer():
@@ -55,8 +63,14 @@ class TextDataset(torch.utils.data.Dataset):
         return self.num_sequences
 
     def __getitem__(self, idx):
-        start = idx * self.sequence_length
-        buf = self.tokens[start : start + self.sequence_length + 1]
+        shard_idx, seq_idx = divmod(idx, self.seqs_per_shard)
+        if self.shards[shard_idx] is None:
+            self.shards[shard_idx] = np.memmap(
+                self.shard_paths[shard_idx], dtype=np.uint16, mode="r", offset=HEADER_BYTES
+            )
+        start = seq_idx * self.sequence_length
+        buf = self.shards[shard_idx][start : start + self.sequence_length + 1]
+        buf = torch.from_numpy(buf.astype(np.int64))
         x = buf[:-1]  # inputs
         y = buf[1:]  # targets
         return x, y
@@ -66,15 +80,12 @@ if __name__ == "__main__":
     dataset_configs = config_training["dataset_configs"]
 
     for split in ["train", "val"]:
-        dataset = TextDataset(split=split, **dataset_configs)
-        print(
-            f"{split:5s}: {len(dataset.tokens):,} tokens -> "
-            f"{len(dataset):,} sequences of {dataset.sequence_length}"
-        )
+        dataset = ShardDataset(split=split, **dataset_configs)
 
+    enc = dataset.get_tokenizer()
     x, y = dataset[0]
     print(f"x shape: {tuple(x.shape)}, y shape: {tuple(y.shape)}")
     assert torch.equal(x[1:], y[:-1]), "targets must be inputs shifted by one"
-    print(f"x[:16] decoded: {dataset.enc.decode(x[:16].tolist())!r}")
-    print(f"y[:16] decoded: {dataset.enc.decode(y[:16].tolist())!r}")
+    print(f"x[:16] decoded: {enc.decode(x[:16].tolist())!r}")
+    print(f"y[:16] decoded: {enc.decode(y[:16].tolist())!r}")
     print("\nDataset loaded successfully.")

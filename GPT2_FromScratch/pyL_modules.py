@@ -5,7 +5,7 @@ import time
 import lightning.pytorch as pl
 import torch
 import yaml
-from custom_dataset import CONFIG_PATH, TextDataset
+from custom_dataset import CONFIG_PATH, ShardDataset
 from lightning.pytorch.utilities import grad_norm
 from model import GPT2
 from torch.nn import functional as F
@@ -23,8 +23,8 @@ class PyLDataModule(pl.LightningDataModule):
         self.dataset_configs = config_training["dataset_configs"]
 
     def setup(self, stage=None):
-        self.train_set = TextDataset(split="train", **self.dataset_configs)
-        self.val_set = TextDataset(split="val", **self.dataset_configs)
+        self.train_set = ShardDataset(split="train", **self.dataset_configs)
+        self.val_set = ShardDataset(split="val", **self.dataset_configs)
 
     def _dataloader(self, dataset, shuffle, drop_last):
         return DataLoader(
@@ -59,7 +59,7 @@ class PyLModel(pl.LightningModule):
         ]
         self.hparams_training = config_training["training_hyperparameters"]
         self.max_length = 32
-        self.tokenizer = TextDataset.get_tokenizer()
+        self.tokenizer = ShardDataset.get_tokenizer()
 
         self._t_last_step = None
         self._loss_accum = 0.0
