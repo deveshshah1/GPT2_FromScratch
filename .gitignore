@@ -7,3 +7,9 @@ __pycache__/
 
 # Downloaded FineWeb-Edu token shards (~2.2GB)
 dataset/finewebedu/
+
+# Trained checkpoints and predictions (~360MB per ckpt)
+trained_models/
+
+# macOS
+.DS_Store

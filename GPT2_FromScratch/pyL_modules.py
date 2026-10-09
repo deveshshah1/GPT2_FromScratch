@@ -137,15 +137,16 @@ class PyLModel(pl.LightningModule):
         self._t_last_step = None
 
     @torch.no_grad()
-    def generate_samples(self):
+    def generate_samples(self, num_samples=3, max_length=None):
+        max_length = max_length or self.max_length
         tokens = torch.tensor(self.tokenizer.encode("Hello, I'm a language model,"), dtype=torch.long)
-        xgen = tokens.unsqueeze(0).repeat(3, 1)
+        xgen = tokens.unsqueeze(0).repeat(num_samples, 1)
         xgen = xgen.to(self.device)
         sample_rng = torch.Generator(device=self.device)
         sample_rng.manual_seed(42 + self.global_rank)
 
         self.model.eval()
-        while xgen.size(1) < self.max_length:
+        while xgen.size(1) < max_length:
             # crop to the last block_size tokens
             # call forward directly to skip the compiled path, which would recompile for every new length
             logits = self.model.forward(xgen[:, -self.block_size :])  # (B, T, vocab_size)
